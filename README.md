@@ -1,198 +1,72 @@
-# TradeSense: AI Trade Agent
+# MixusAI – Human-in-the-Loop AI Agents
 
-TradeSense is an AI-powered trading assistant that helps users analyze financial news, market trends, and provides intelligent investment insights.
+Automate your workflows with customizable AI agents that you build in plain English.  
+These agents work with your existing tools (Gmail, Salesforce, Jira, Slack, etc.), and always include a human-in-the-loop step for safety and oversight.
 
-![TradeSense Home](https://github.com/wangwanlu09/TradeSense_AiTradeAgent/blob/main/Home.png?raw=true)
+---
 
-## Background + Overview
+## 🚀 What it does  
+- Write a simple instruction (e.g., “Find overdue Jira tasks, draft reminder emails, have Sarah approve, then send”). :contentReference[oaicite:1]{index=1}  
+- The platform generates an AI agent that executes multi-step tasks: research, draft, review, send, log. :contentReference[oaicite:2]{index=2}  
+- Built-in human oversight: you decide which steps need approval, so you're always in control. :contentReference[oaicite:3]{index=3}  
+- Deep integrations with your tools so the agent works with your data and context. :contentReference[oaicite:4]{index=4}
 
-Making smart investments shouldn’t require constant monitoring of volatile markets or spending hours reading scattered financial news. TradeSense is designed to simplify that process with real-time, AI-powered trading insights based on news sentiment, technical analysis, and live market data.
+---
 
-Imagine opening your dashboard and instantly understanding the market mood, key opportunities, and smart strategies—all backed by real-time data and intelligent recommendations. With TradeSense, trading becomes more informed, focused, and accessible.
+## 📌 Key Features  
+- **No code needed**: Describe what you want, the system builds the agent. :contentReference[oaicite:5]{index=5}  
+- **Human-in-the-loop**: Safety and accuracy by letting humans review before actions happen. :contentReference[oaicite:6]{index=6}  
+- **Email & Slack-first**: Interact with your agents via email or Slack—no new UI to learn. :contentReference[oaicite:7]{index=7}  
+- **Tool integration**: Connect with Gmail, Salesforce, Jira, Google Drive, Notion and more. :contentReference[oaicite:8]{index=8}  
+- **Instant deployment**: Agents can be created and run in minutes. :contentReference[oaicite:9]{index=9}  
 
-![TradeSense Overview News](https://github.com/wangwanlu09/TradeSense_AiTradeAgent/blob/main/Overview%20News%20Analysis.png?raw=true)
+---
 
-![TradeSense Market Trend](https://github.com/wangwanlu09/TradeSense_AiTradeAgent/blob/main/Market%20Trend.png?raw=true)
+## 🧑‍💼 Who is it for  
+- Business teams that want to automate repetitive workflows but keep control.  
+- Sales, marketing, HR, support teams leveraging email & Slack.  
+- Organizations that use existing tools like CRM, project-tracking, drive/storage.  
+- Anyone looking to offload manual, multi-step tasks into a trusted process.
 
-### The Problem:
+---
 
-- **Too Much Noise**: Investors are overwhelmed by fragmented news sources and conflicting signals.
-- **Lack of Personalization**: Most tools don’t adapt to individual risk preferences or investment styles.
-- **Outdated Tools**: Traditional market analysis is slow and reactive, not predictive.
+## 🎯 Getting Started  
+1. Sign up or log in to the platform.  
+2. Connect your tools (email, CRM, workspace, etc.).  
+3. Define your workflow in plain English.  
+4. Specify where human approval is required.  
+5. Launch your agent and monitor its activity.
 
-### Our Solution:
+---
 
-Powered by cutting-edge AI models and real-time financial data, TradeSense delivers personalized, intelligent trading insights across both crypto and stock markets. Whether you're a new investor overwhelmed by market noise or an experienced trader looking to enhance your strategy, TradeSense helps you make smarter, faster decisions.
+## 🧩 Example Use Case  
+> “Research our leads, draft personalized outreach emails, wait for me to approve, then send and log them in Salesforce.”  
+With this, the agent:  
+- Researches company/lead data  
+- Drafts a personalized email  
+- Pauses for your review  
+- Sends email when approved  
+- Logs outreach in CRM  
+────────────────────────────────  
+What used to take hours now takes minutes with oversight and accuracy. :contentReference[oaicite:10]{index=10}
 
-![TradeSense Business NewsP2](https://github.com/wangwanlu09/TradeSense_AiTradeAgent/blob/main/Business%20NewsP2.jpg?raw=true)
+---
 
-By combining live news sentiment analysis with technical indicators like RSI, MA20, MA120, and volume trends, TradeSense adapts continuously to changing market conditions—ensuring every recommendation is timely, relevant, and actionable.
+## 🔒 Why It Matters  
+AI agents can go wrong—hallucinations, wrong context, bad integrations. But by mixing AI with human oversight, you get speed *and* reliability. :contentReference[oaicite:11]{index=11}
 
-## Features
+---
 
-- **News Analysis**  
-  Analyzes financial news in real time to extract sentiment, identify key topics, and surface relevant market insights.
+## 📋 Status & Pricing  
+- Platform launched in beta late 2024. :contentReference[oaicite:12]{index=12}  
+- Pricing/custom-quote for enterprises (check the official site for latest). :contentReference[oaicite:13]{index=13}  
 
-- **Technical Analysis**  
-  Provides essential technical indicators such as RSI, MA20, MA120, and volume analytics, along with basic chart pattern recognition.
+---
 
-- **Strategy Evaluation**  
-  Evaluates market conditions and suggests trading strategies based on data-driven insights and sentiment signals.
+## 📚 Further Resources  
+- Official website: [mixus.ai](https://www.mixus.ai)  
+- Blog / news: TechCrunch article covering their email-first agent vision. :contentReference[oaicite:14]{index=14}  
 
-- **Market Insights**  
-  Offers real-time stock and crypto market data, highlighting major movements and emerging trends.
+---
 
-- **Personalized Recommendations**  
-  Delivers tailored investment suggestions based on user preferences, live data, and AI-driven analysis.
-
-## How It Works
-
-TradeSense combines real-time data retrieval, AI-powered analysis, and personalized strategy generation to deliver actionable trading insights. Here's how the system works:
-
-- **News Aggregation**  
-  The system continuously fetches and filters financial news from reliable sources across the stock and crypto markets.
-
-  ![TradeSense News Analysis](https://github.com/wangwanlu09/TradeSense_AiTradeAgent/blob/main/News%20Analysis.png?raw=true)
-
-- **Sentiment Analysis**  
-  AI models analyze the news content to detect market sentiment (positive, neutral, negative) and identify key financial signals.
-
-- **Strategy Evaluation**  
-  Evaluates market conditions and suggests trading strategies based on data-driven insights and sentiment signals.
-
-- **Technical Indicator Calculation**  
-  Using APIs (e.g., Binance, Yahoo Finance), TradeSense calculates indicators such as RSI, MA20, MA120, and volume trends for selected assets.
-
-- **Strategy & Trend Evaluation**  
-  Based on combined news sentiment and technical signals, the system generates strategy suggestions and highlights short-term trends.
-
-- **Personalized Recommendations**  
-  Finally, TradeSense tailors its output based on user preferences or portfolio interests, delivering concise, actionable recommendations via dashboard or chat.
-  
-## Project Structure
-
-```
-├── main.py                 # FastAPI application entry point
-├── routes/                 # API route definitions
-│   ├── news.py             # News analysis endpoints
-│   ├── market.py           # Market data endpoints
-│   ├── technical.py        # Technical analysis endpoints
-│   ├── strategy.py         # Strategy evaluation endpoints
-│   └── recommend.py        # Recommendation endpoints
-├── services/               # Business logic services
-│   ├── news_analyzer.py    # News processing and analysis
-│   ├── technical_analysis.py # Technical indicators and patterns
-│   ├── strategy_analyzer.py  # Strategy evaluation logic
-│   ├── trend_analyzer.py     # Market trend analysis
-│   ├── recommendation.py     # Recommendation generation
-│   └── gpt_client.py         # GPT integration for analysis
-├── frontend/               # React frontend application
-│   ├── src/                # Frontend source code
-│   └── public/             # Static assets
-└── requirements.txt        # Python dependencies
-```
-
-## Setup Instructions
-
-### Backend Setup
-
-1. Clone the repository:
-   ```bash
-   git clone https://github.com/yourusername/ai-trade-agent.git
-   cd ai-trade-agent
-   ```
-
-2. Create and activate a virtual environment:
-   ```bash
-   python -m venv .venv
-   # On Windows
-   .venv\Scripts\activate
-   # On macOS/Linux
-   source .venv/bin/activate
-   ```
-
-3. Install dependencies:
-   ```bash
-   pip install -r requirements.txt
-   ```
-
-4. Start the backend server:
-   ```bash
-   uvicorn main:app --reload
-   ```
-   The API will be available at http://localhost:8000
-
-### Frontend Setup
-
-1. Navigate to the frontend directory:
-   ```bash
-   cd frontend
-   ```
-
-2. Install dependencies:
-   ```bash
-   npm install
-   ```
-
-3. Start the development server:
-   ```bash
-   npm run dev
-   ```
-   The frontend will be available at http://localhost:5173
-
-## API Endpoints
-
-- `GET /news` - Get analyzed financial news
-- `GET /market` - Get market data
-- `GET /technical` - Get technical analysis for specific securities
-- `GET /strategy` - Get strategy evaluations and recommendations
-- `GET /recommend` - Get personalized investment recommendations
-
-## Technologies Used 
-Here’s what powers the intelligent trading experience behind **TradeSense**:
-
-- **FastAPI ⚡**  
-  A high-performance web framework for handling API requests efficiently, enabling real-time data access and interaction with the AI trade agent.
-
-- **React + TypeScript + Tailwind CSS 💻**  
-  A modern, responsive front-end stack that ensures a smooth user interface with clean visuals, dynamic updates, and a great dashboard experience.
-
-- **Azure AI Agent Service 🤖**  
-  Powers intelligent interactions and trading recommendations using cutting-edge GPT models tailored for financial context and dialogue.
-
-- **Azure Text Analytics 🧠**  
-  Extracts sentiment and key insights from financial news, turning unstructured text into actionable intelligence.
-
-- **Redis 🔄**  
-  Used for caching frequently accessed data like market summaries or news sentiment results, improving system responsiveness.
-
-![TradeSense Tech](https://github.com/wangwanlu09/TradeSense_AiTradeAgent/blob/main/Tech.png?raw=true)
-
-## Insights Deep Dive
-
-### Real-Time Smart Analysis  
-TradeSense retrieves the latest financial news and market data based on user input (e.g., BTC or a specific stock), and uses AI models to analyze current sentiment and trends. For example, when a user enters “AAPL?”, the system combines sentiment analysis and technical indicators to generate a real-time market summary and actionable insight.
-
-### GPT-Powered Summaries   
-Powered by Azure AI Agent Service with GPT models, TradeSense produces concise and insightful trend summaries.  
-**Example output**: *“Lower stock futures signal cautious sentiment as investors await earnings reports, company results and outlooks.”*
-
-![TradeSense Business News](https://github.com/wangwanlu09/TradeSense_AiTradeAgent/blob/main/Business%20News.png?raw=true)
-
-### Multimodal Insights   
-By combining news sentiment, market movement (e.g., price and percent change), and technical indicators such as RSI, MA20, and MA120, TradeSense provides a comprehensive market perspective. This multi-signal approach helps users make better-informed decisions and avoid relying on a single indicator.
-
-![TradeSense Recommendation P3](https://github.com/wangwanlu09/TradeSense_AiTradeAgent/blob/main/Recommendation%20P3.png?raw=true)
-
-
-## Contributing
-
-1. Fork the repository
-2. Create your feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add some amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
-
-## License
-
-This project is licensed under the MIT License - see the LICENSE file for details. 
+*Feel free to raise issues or submit pull-requests if you’re adding integrations, examples or agent templates.*  
