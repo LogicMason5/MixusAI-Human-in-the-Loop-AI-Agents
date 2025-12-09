@@ -21,9 +21,12 @@ def root():
 
 
 app.include_router(news.router)
+
 app.include_router(strategy.router)
+
 app.include_router(market.router)
 <<<<<<< HEAD
 app.include_router(technical.router)
 app.include_router(recommend.router)
+
 
