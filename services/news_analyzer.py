@@ -1,236 +1,245 @@
-import requests
-from azure.ai.textanalytics import TextAnalyticsClient
-from azure.core.credentials import AzureKeyCredential
-from dotenv import load_dotenv
-from typing import Optional
 import os
 import time
-import hashlib
 import json
-from datetime import datetime, timedelta
+import hashlib
 import logging
-from services.gpt_client import analyze_news_sentiment  # GPT analysis function
+from typing import List, Dict, Optional, Tuple
+from datetime import datetime, timedelta
 
-# Load environment variables
+import requests
+from dotenv import load_dotenv
+from azure.ai.textanalytics import TextAnalyticsClient
+from azure.core.credentials import AzureKeyCredential
+
+from services.gpt_client import analyze_news_sentiment
+
+
+# =========================
+# Configuration
+# =========================
+
 load_dotenv()
 
 AZURE_KEY = os.getenv("AZURE_KEY")
 AZURE_ENDPOINT = os.getenv("AZURE_ENDPOINT")
-client = TextAnalyticsClient(endpoint=AZURE_ENDPOINT, credential=AzureKeyCredential(AZURE_KEY))
 
-# Cache settings
+if not AZURE_KEY or not AZURE_ENDPOINT:
+    raise RuntimeError("AZURE_KEY or AZURE_ENDPOINT is missing")
+
 CACHE_EXPIRATION_HOURS = 6
 NEWS_CACHE_FILE = "news_cache.json"
-LAST_API_CALL_TIME = 0
-API_CALL_COOLDOWN = 60  # in seconds
+API_CALL_COOLDOWN = 60  # seconds
+AZURE_BATCH_SIZE = 10
 
-# Global cache dictionary
-news_cache = {}
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s [%(levelname)s] %(message)s"
+)
 
-# Setup logging
-logging.basicConfig(level=logging.INFO)
+client = TextAnalyticsClient(
+    endpoint=AZURE_ENDPOINT,
+    credential=AzureKeyCredential(AZURE_KEY)
+)
 
-def load_cache():
-    """Load news sentiment cache from file."""
+# =========================
+# Runtime State
+# =========================
+
+news_cache: Dict[str, Dict] = {}
+LAST_API_CALL_TIME = 0.0
+
+
+# =========================
+# Cache Utilities
+# =========================
+
+def load_cache() -> None:
     global news_cache
+    if not os.path.exists(NEWS_CACHE_FILE):
+        news_cache = {}
+        return
+
     try:
-        if os.path.exists(NEWS_CACHE_FILE):
-            with open(NEWS_CACHE_FILE, 'r') as f:
-                news_cache = json.load(f)
+        with open(NEWS_CACHE_FILE, "r", encoding="utf-8") as f:
+            news_cache = json.load(f)
     except Exception as e:
-        logging.error(f"Error loading cache: {e}")
+        logging.error(f"Failed to load cache: {e}")
         news_cache = {}
 
-def save_cache():
-    """Save sentiment analysis cache to file."""
-    try:
-        with open(NEWS_CACHE_FILE, 'w') as f:
-            json.dump(news_cache, f)
-    except Exception as e:
-        logging.error(f"Error saving cache: {e}")
 
-# Load cache on startup
+def save_cache() -> None:
+    try:
+        with open(NEWS_CACHE_FILE, "w", encoding="utf-8") as f:
+            json.dump(news_cache, f, ensure_ascii=False, indent=2)
+    except Exception as e:
+        logging.error(f"Failed to save cache: {e}")
+
+
 load_cache()
 
-def cache_key(url: str, titles: list) -> str:
-    """Generate a unique cache key based on URL and news titles."""
-    content_hash = hashlib.md5(str(titles).encode()).hexdigest()
-    return f"{url}_{content_hash}"
 
-def get_cached_response(key: str) -> Optional[dict]:
-    """Retrieve a valid cache entry if it hasn't expired."""
-    if key in news_cache:
-        timestamp = news_cache[key]["timestamp"]
-        expiration = datetime.fromtimestamp(timestamp) + timedelta(hours=CACHE_EXPIRATION_HOURS)
-        if datetime.now() < expiration:
-            return news_cache[key]["data"], news_cache[key]["gpt_results"]
-    logging.info(f"No valid cache found for key: {key}")
-    return None
+def generate_cache_key(url: str, titles: List[str]) -> str:
+    content_hash = hashlib.md5(
+        "|".join(titles).encode("utf-8")
+    ).hexdigest()
+    return f"{url}:{content_hash}"
 
-def analyze_sentiment(documents: list) -> list:
-    """Use Azure Text Analytics API to analyze sentiment in batches."""
-    results = []
-    for i in range(0, len(documents), 10):
-        batch = documents[i:i + 10]
-        response = client.analyze_sentiment(batch, language="en")
-        results.extend([
-            {"label": doc.sentiment, "confidence_scores": {
-            "positive": doc.confidence_scores.positive,
-            "neutral": doc.confidence_scores.neutral,
-            "negative": doc.confidence_scores.negative
-            }}
-            for doc in response
-        ])
+
+def get_cached_response(key: str) -> Optional[List[Dict]]:
+    entry = news_cache.get(key)
+    if not entry:
+        return None
+
+    expiry = datetime.fromtimestamp(entry["timestamp"]) + timedelta(hours=CACHE_EXPIRATION_HOURS)
+    if datetime.utcnow() > expiry:
+        return None
+
+    return entry["data"]
+
+
+# =========================
+# Azure Sentiment
+# =========================
+
+def analyze_sentiment(titles: List[str]) -> List[Dict]:
+    results: List[Dict] = []
+
+    for i in range(0, len(titles), AZURE_BATCH_SIZE):
+        batch = titles[i:i + AZURE_BATCH_SIZE]
+
+        try:
+            response = client.analyze_sentiment(batch, language="en")
+            for doc in response:
+                results.append({
+                    "label": doc.sentiment,
+                    "confidence_scores": {
+                        "positive": doc.confidence_scores.positive,
+                        "neutral": doc.confidence_scores.neutral,
+                        "negative": doc.confidence_scores.negative
+                    }
+                })
+        except Exception as e:
+            logging.error(f"Azure sentiment batch failed: {e}")
+            results.extend([{}] * len(batch))
+
     return results
 
-def parse_gpt_response(gpt_response: str, expected_count: int) -> list:
-    """Parse GPT response into a list of analysis strings with padding if needed."""
-    explanations = []
-    
-    # Split the response by numbered lines (e.g., "1. ", "2. ", etc.)
-    lines = gpt_response.strip().split('\n')
-    current_explanation = ""
-    
-    for line in lines:
-        line = line.strip()
-        # Skip empty lines
-        if not line:
-            continue
-            
-        # Skip intro lines that don't start with a number
-        if not (line[0].isdigit() and ". " in line[:4]):
-            # Check if this is a continuation of a previous explanation
-            if current_explanation:
-                current_explanation += " " + line
-            continue
-            
-        # If we have an existing explanation, add it to the list before starting a new one
-        if current_explanation:
-            explanations.append(clean_explanation(current_explanation))
-            
-        # Start a new explanation, removing the number prefix
-        parts = line.split(". ", 1)
-        if len(parts) > 1:
-            current_explanation = parts[1]
-        else:
-            current_explanation = line
-    
-    # Add the last explanation if there is one
-    if current_explanation:
-        explanations.append(clean_explanation(current_explanation))
 
-    # Pad or trim to match expected count
-    if len(explanations) < expected_count:
-        # Fill missing explanations with placeholder
-        while len(explanations) < expected_count:
-            explanations.append("No analysis available.")
-    elif len(explanations) > expected_count:
-        explanations = explanations[:expected_count]  # Trim to match expected count
-
-    return explanations
+# =========================
+# GPT Parsing
+# =========================
 
 def clean_explanation(text: str) -> str:
-    """Clean up explanation text to remove unwanted patterns"""
-    # Remove introductory phrases
-    patterns_to_remove = [
-        "Certainly!", 
-        "Here's a market-oriented interpretation",
+    unwanted_prefixes = [
+        "Certainly!",
         "Here's my analysis",
         "Market analysis:",
         "Market interpretation:",
         "**Interpretation:**"
     ]
-    
-    cleaned_text = text
-    for pattern in patterns_to_remove:
-        if cleaned_text.startswith(pattern):
-            cleaned_text = cleaned_text[len(pattern):].strip()
-    
-    # Remove headline repetition (often appears when GPT repeats the headline)
-    if "**" in cleaned_text and cleaned_text.count("**") >= 2:
-        # Extract content between first set of ** markers
-        headline_parts = cleaned_text.split("**", 2)
-        if len(headline_parts) >= 3:
-            # Check if this looks like a headline
-            potential_headline = headline_parts[1]
-            if len(potential_headline.split()) <= 15:  # Reasonable headline length
-                # Remove the headline part
-                cleaned_text = "".join(headline_parts[2:]).strip()
-                # If the next part starts with **, remove those too
-                if cleaned_text.startswith("**"):
-                    cleaned_text = cleaned_text[2:].strip()
-    
-    return cleaned_text
 
-def get_gpt_analysis(titles: list, contents: list) -> tuple:
-    """Perform GPT sentiment analysis with rate limiting."""
+    for prefix in unwanted_prefixes:
+        if text.startswith(prefix):
+            text = text[len(prefix):].strip()
+
+    if text.count("**") >= 2:
+        parts = text.split("**")
+        if len(parts[1].split()) <= 15:
+            text = "".join(parts[2:]).strip()
+
+    return text
+
+
+def parse_gpt_response(response: str, expected_count: int) -> List[str]:
+    explanations: List[str] = []
+    current = ""
+
+    for line in response.splitlines():
+        line = line.strip()
+        if not line:
+            continue
+
+        if line[0].isdigit() and ". " in line[:4]:
+            if current:
+                explanations.append(clean_explanation(current))
+            current = line.split(". ", 1)[1]
+        else:
+            current += f" {line}"
+
+    if current:
+        explanations.append(clean_explanation(current))
+
+    while len(explanations) < expected_count:
+        explanations.append("No analysis available.")
+
+    return explanations[:expected_count]
+
+
+# =========================
+# GPT Sentiment
+# =========================
+
+def get_gpt_analysis(
+    titles: List[str]
+) -> Tuple[str, List[str]]:
     global LAST_API_CALL_TIME
-    current_time = time.time()
-    if current_time - LAST_API_CALL_TIME < API_CALL_COOLDOWN:
-        logging.warning("API rate limit exceeded. Please try again later.")
-        return "API rate limited", ["Rate limited. Try again later."] * len(titles)
+
+    now = time.time()
+    if now - LAST_API_CALL_TIME < API_CALL_COOLDOWN:
+        logging.warning("GPT API cooldown active")
+        return "Rate limited", ["Rate limited"] * len(titles)
 
     try:
-        LAST_API_CALL_TIME = current_time
-        gpt_raw_response = analyze_news_sentiment(titles)  
-        logging.info(f"GPT Response: {gpt_raw_response}")  # Log the raw response
-        gpt_results = parse_gpt_response(gpt_raw_response, expected_count=len(titles))
-        return gpt_raw_response, gpt_results
+        LAST_API_CALL_TIME = now
+        raw = analyze_news_sentiment(titles)
+        parsed = parse_gpt_response(raw, len(titles))
+        return raw, parsed
     except Exception as e:
-        logging.error(f"Error during GPT analysis: {e}")
-        return "API error", ["Unable to analyze news."] * len(titles)
+        logging.error(f"GPT analysis failed: {e}")
+        return "GPT error", ["Unable to analyze"] * len(titles)
 
-def fetch_and_analyze_news_by_url(url: str) -> dict:
-    """Fetch news from a URL and return analyzed results with Azure and GPT sentiment."""
+
+# =========================
+# Main Entry
+# =========================
+
+def fetch_and_analyze_news_by_url(url: str) -> Dict:
     try:
-        response = requests.get(url)
-        response.raise_for_status()  
-        news_data = response.json()
-        if "articles" not in news_data:
-            logging.error("No 'articles' key in response data.")
-            return {"error": "No news articles found."}
-        articles = news_data["articles"]
-    except requests.exceptions.RequestException as e:
-        logging.error(f"Error fetching news from {url}: {e}")
+        response = requests.get(url, timeout=15)
+        response.raise_for_status()
+        data = response.json()
+    except Exception as e:
+        logging.error(f"Failed fetching news: {e}")
         return {"error": str(e)}
 
-    titles = [article.get("title", "") for article in articles]
-    descriptions = [article.get("description", "") for article in articles]
+    articles = data.get("articles")
+    if not articles:
+        return {"error": "No articles found"}
+
+    titles = [a.get("title", "") for a in articles]
+    descriptions = [a.get("description", "") for a in articles]
     contents = [
-        f"{desc}\n{content}" if desc else content
-        for desc, content in zip(descriptions, [article.get("content", "") for article in articles])
+        f"{d}\n{a.get('content', '')}".strip()
+        for d, a in zip(descriptions, articles)
     ]
 
-    cache_id = cache_key(url, titles)
-    cached_result = get_cached_response(cache_id)
-    if cached_result:
-        return {"articles": cached_result[0]}
+    cache_key = generate_cache_key(url, titles)
+    cached = get_cached_response(cache_key)
+    if cached:
+        logging.info("Serving from cache")
+        return {"articles": cached}
 
     azure_results = analyze_sentiment(titles)
-    gpt_raw_response, gpt_results = get_gpt_analysis(titles, contents)
+    _, gpt_results = get_gpt_analysis(titles)
 
     for i, article in enumerate(articles):
         article["azure_sentiment"] = azure_results[i] if i < len(azure_results) else {}
-        article["gpt_analysis"] = gpt_results[i] if i < len(gpt_results) else "No analysis available."
+        article["gpt_analysis"] = gpt_results[i] if i < len(gpt_results) else ""
 
-    news_cache[cache_id] = {
+    news_cache[cache_key] = {
         "timestamp": time.time(),
-        "data": articles,
-        "gpt_results": gpt_results
+        "data": articles
     }
     save_cache()
 
     return {"articles": articles}
-
-
-
-
-
-
-
-
-
-
-
-
-
